@@ -5,27 +5,49 @@ import java.util.*;
 
 public class closestpair {
 
-    static final boolean DEBUG_PRINTS = false;
+    private static final boolean DEBUG_PRINTS = true;
 
     public static void main(String[] args) {
-        if(args.length!=1) {
+        List<Point> points;
+
+        try {
+            points = inhabitList(args[0]);
+            List<Point> closestPair = quadraticSolution(points);
+            System.out.println(closestPair.get(0).distanceTo(closestPair.get(1)));
+        } catch (FileNotFoundException e) {
+            System.err.println("Could not find file, exiting...");
+            return;
+        } catch (ArrayIndexOutOfBoundsException aioobe) {
             System.err.println("Wrong number of arguments.");
             return;
         }
 
-        List<Point> points = new ArrayList<>();
-        try {
-            inhabitList(args[0], points);
-        } catch (FileNotFoundException e) {
-            System.out.println("Could not find file, exiting...");
-            return;
-        }
     }
 
-    private static void inhabitList(String fileName, List<Point> points) throws FileNotFoundException {
+    private static List<Point> quadraticSolution(List<Point> points) {
+        ArrayList<Point> closestPair = new ArrayList<>();
+        double shortestDistance = Double.MAX_VALUE;
+
+        for(Point p : points) {
+            for(Point pp : points) {
+                double currDist = p.distanceTo(pp);
+                if(!p.equals(pp) && currDist<shortestDistance) {
+                    shortestDistance = currDist;
+                    closestPair.clear();
+                    closestPair.add(p);
+                    closestPair.add(pp);
+                }
+            }
+        }
+        return closestPair;
+    }
+
+    private static List<Point> inhabitList(String fileName) throws FileNotFoundException {
+        ArrayList<Point> points = new ArrayList<>();
+        Scanner sc = new Scanner(new FileInputStream(fileName));
         int nonPointLines = 0;
         int n = 0;
-        Scanner sc = new Scanner(new FileInputStream(fileName));
+
         while(sc.hasNextLine()) {
             String currLine = sc.nextLine();
 
@@ -44,15 +66,16 @@ public class closestpair {
                 nonPointLines++;
             }
         }
-        if(n!=points.size()) {
-            System.err.println("Could not parse "+n+" points as described in the file.");
-        }
         if(DEBUG_PRINTS) {
+            if(n!=points.size()) {
+                System.err.println("Could not parse "+n+" points as described in the file.");
+            }
             System.err.println("thrown lines count: " + nonPointLines);
             System.err.println("parsed lines count: " + points.size());
             System.err.println("head:\t"+points.get(0));
             System.err.println("last:\t"+points.get(points.size()-1));
         }
+        return points;
     }
 
     private static Point parsePoint(String pointString) throws ParseException {
@@ -95,6 +118,10 @@ public class closestpair {
         @Override
         public String toString() {
             return label+": ("+x+", "+y+")";
+        }
+
+        public double distanceTo(Point other) {
+            return Math.hypot(this.x-other.x, this.y-other.y);
         }
     }
         
