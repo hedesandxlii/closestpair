@@ -12,8 +12,7 @@ public class closestpair {
 
         try {
             points = inhabitList(args[0]);
-            List<Point> closestPair = quadraticSolution(points);
-            System.out.println(closestPair.get(0).distanceTo(closestPair.get(1)));
+            System.out.println(quadraticSolution(points));
         } catch (FileNotFoundException e) {
             System.err.println("Could not find file, exiting...");
             return;
@@ -24,7 +23,65 @@ public class closestpair {
 
     }
 
-    private static List<Point> quadraticSolution(List<Point> points) {
+    private static double nlognSolution(Point[] points) {
+        if(points.length <= 3) {
+            return quadraticSolution(new ArrayList<>(Arrays.asList(points)));
+        }
+        //Point[] tmp = points.toArray(new Point[points.size()]);
+        Point[] px = Arrays.copyOf(points, points.length);
+        //Point[] py = Arrays.copyOf(tmp, tmp.length);
+
+        Arrays.sort(px, (p1, p2) -> Double.compare(p1.x, p2.x));
+
+        double deltaL = nlognSolution(Arrays.copyOfRange(px,0,px.length/2));
+        double deltaR = nlognSolution(Arrays.copyOfRange(px,px.length/2+1,px.length));
+        double delta = Math.min(deltaL, deltaR);
+        // Finding indicies for the strip array.
+        int start;
+        int end;
+        int middle = px.length/2;
+        int i = middle;
+
+        while(px[i].x >= px[middle].x - delta) {
+            i--;
+        }
+        start = i;
+        i = middle;
+
+        while(px[i].x <= px[middle].x + delta) {
+            i++;
+        }
+        end = i;
+
+        Point[] strip = Arrays.copyOfRange(px, start, end);
+
+        Arrays.sort(strip, (p1, p2) -> Double.compare(p1.y, p2.y));
+
+        double result = delta;
+        for(int j = 0; j<strip.length; j++) {
+            for(int k = 1; k<15; k++) {
+                try {
+                    double distance = strip[j].distanceTo(strip[j+k]);
+                    if(distance<result) result=distance;
+                } catch (ArrayIndexOutOfBoundsException ignored){
+                }
+            }
+        }
+        return delta;
+    }
+
+    private static double recusiveThing(Point[] px) {
+        if(px.length <= 3) {
+            return quadraticSolution(new ArrayList<>(Arrays.asList(px)));
+        } else {
+            Point[] lx = Arrays.copyOfRange(px, 0, px.length/2);
+            Point[] rx = Arrays.copyOfRange(px, px.length/2+1, px.length-1);
+            return Math.min(recusiveThing(lx), recusiveThing(rx));
+        }
+
+    }
+
+    private static double quadraticSolution(List<Point> points) {
         ArrayList<Point> closestPair = new ArrayList<>();
         double shortestDistance = Double.MAX_VALUE;
 
@@ -39,7 +96,7 @@ public class closestpair {
                 }
             }
         }
-        return closestPair;
+        return shortestDistance;
     }
 
     private static List<Point> inhabitList(String fileName) throws FileNotFoundException {
@@ -124,5 +181,5 @@ public class closestpair {
             return Math.hypot(this.x-other.x, this.y-other.y);
         }
     }
-        
+
 }
