@@ -9,10 +9,22 @@ public class closestpair {
 
     public static void main(String[] args) {
         List<Point> points;
+        long startTime = System.currentTimeMillis();
 
         try {
             points = inhabitList(args[0]);
-            System.out.println(quadraticSolution(points));
+            Point[] pointsArray = points.toArray(new Point[0]);
+            long fileTime = System.currentTimeMillis()-startTime;
+            System.err.println("\n\tfile read: " + formatLongTime(fileTime));
+
+            Arrays.sort(pointsArray, Comparator.comparingDouble(p -> p.x));
+            long sortTime = System.currentTimeMillis()-startTime;
+            System.err.println("\n\tarray sort: " + formatLongTime(sortTime));
+
+            System.out.println(nlognSolution(pointsArray,0, pointsArray.length-1));
+            long doneTime = System.currentTimeMillis()-startTime;
+            System.err.println("\n\tdone: " + formatLongTime(doneTime));
+
         } catch (FileNotFoundException e) {
             System.err.println("Could not find file, exiting...");
             return;
@@ -23,43 +35,49 @@ public class closestpair {
 
     }
 
-    private static double nlognSolution(Point[] points) {
-        if(points.length <= 3) {
-            return quadraticSolution(new ArrayList<>(Arrays.asList(points)));
+    private static double nlognSolution(Point[] points, int lower, int upper) {
+        int spliceSize = upper-lower;
+        if(spliceSize <= 3) {
+            Point[] splice = Arrays.copyOfRange(points,lower,upper);
+            return quadraticSolution(splice);
         }
-        //Point[] tmp = points.toArray(new Point[points.size()]);
-        Point[] px = Arrays.copyOf(points, points.length);
-        //Point[] py = Arrays.copyOf(tmp, tmp.length);
 
-        Arrays.sort(px, (p1, p2) -> Double.compare(p1.x, p2.x));
-
-        double deltaL = nlognSolution(Arrays.copyOfRange(px,0,px.length/2));
-        double deltaR = nlognSolution(Arrays.copyOfRange(px,px.length/2+1,px.length));
+        double deltaL = nlognSolution(points,0,spliceSize/2);
+        double deltaR = nlognSolution(points,spliceSize/2+1,spliceSize);
         double delta = Math.min(deltaL, deltaR);
+
         // Finding indicies for the strip array.
         int start;
         int end;
-        int middle = px.length/2;
+        int middle = lower + spliceSize/2;
         int i = middle;
 
-        while(px[i].x >= px[middle].x - delta) {
-            i--;
+        while(points[i].x >= points[middle].x - delta) {
+            if(i==0) {
+                break;
+            } else {
+                i--;
+            }
         }
         start = i;
         i = middle;
 
-        while(px[i].x <= px[middle].x + delta) {
-            i++;
+        while(points[i].x <= points[middle].x + delta) {
+            if(i==upper) {
+                break;
+            } else {
+                i++;
+            }
         }
         end = i;
 
-        Point[] strip = Arrays.copyOfRange(px, start, end);
+        Point[] strip = Arrays.copyOfRange(points, start, end);
 
-        Arrays.sort(strip, (p1, p2) -> Double.compare(p1.y, p2.y));
+        Arrays.sort(strip, Comparator.comparingDouble(p -> p.y));
 
         double result = delta;
         for(int j = 0; j<strip.length; j++) {
-            for(int k = 1; k<15; k++) {
+            for(int k = 1; k<=15; k++) {
                 try {
                     double distance = strip[j].distanceTo(strip[j+k]);
                     if(distance<result) result=distance;
@@ -67,22 +85,11 @@ public class closestpair {
                 }
             }
         }
-        return delta;
+        return result;
     }
 
-    private static double recusiveThing(Point[] px) {
-        if(px.length <= 3) {
-            return quadraticSolution(new ArrayList<>(Arrays.asList(px)));
-        } else {
-            Point[] lx = Arrays.copyOfRange(px, 0, px.length/2);
-            Point[] rx = Arrays.copyOfRange(px, px.length/2+1, px.length-1);
-            return Math.min(recusiveThing(lx), recusiveThing(rx));
-        }
-
-    }
-
-    private static double quadraticSolution(List<Point> points) {
-        ArrayList<Point> closestPair = new ArrayList<>();
+    private static double quadraticSolution(Point[] points) {
+        //ArrayList<Point> closestPair = new ArrayList<>();
         double shortestDistance = Double.MAX_VALUE;
 
         for(Point p : points) {
@@ -90,9 +97,9 @@ public class closestpair {
                 double currDist = p.distanceTo(pp);
                 if(!p.equals(pp) && currDist<shortestDistance) {
                     shortestDistance = currDist;
-                    closestPair.clear();
-                    closestPair.add(p);
-                    closestPair.add(pp);
+//                    closestPair.clear();
+//                    closestPair.add(p);
+//                    closestPair.add(pp);
                 }
             }
         }
@@ -182,4 +189,11 @@ public class closestpair {
         }
     }
 
+    private static String formatLongTime(long time) {
+        long second = (time / 1000) % 60;
+        long minute = (time / (1000 * 60)) % 60;
+
+        return String.format("%02dm %02ds %dms", minute, second, time);
+    }
 }
+
