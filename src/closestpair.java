@@ -5,7 +5,7 @@ import java.util.*;
 
 public class closestpair {
 
-    private static final boolean DEBUG_PRINTS = true;
+    private static final boolean DEBUG_PRINTS = false;
 
     public static void main(String[] args) {
         List<Point> points;
@@ -15,21 +15,21 @@ public class closestpair {
             points = inhabitList(args[0]);
             Point[] pointsArray = points.toArray(new Point[0]);
             long fileTime = System.currentTimeMillis()-startTime;
-            System.err.println("\n\tfile read: " + formatLongTime(fileTime));
+            if(DEBUG_PRINTS) System.err.println("\n\tfile read: " + formatLongTime(fileTime));
 
             Arrays.sort(pointsArray, Comparator.comparingDouble(p -> p.x));
             long sortTime = System.currentTimeMillis()-startTime;
-            System.err.println("\n\tarray sort: " + formatLongTime(sortTime));
+            if(DEBUG_PRINTS) System.err.println("\n\tarray sort: " + formatLongTime(sortTime));
 
             System.out.println(nlognSolution(pointsArray,0, pointsArray.length-1));
             long doneTime = System.currentTimeMillis()-startTime;
-            System.err.println("\n\tdone: " + formatLongTime(doneTime));
+            if(DEBUG_PRINTS) System.err.println("\n\tdone: " + formatLongTime(doneTime));
 
         } catch (FileNotFoundException e) {
             System.err.println("Could not find file, exiting...");
             return;
         } catch (ArrayIndexOutOfBoundsException aioobe) {
-            System.err.println("Wrong number of arguments.");
+            System.err.println("Wrong number of arguments, exiting...");
             return;
         }
 
