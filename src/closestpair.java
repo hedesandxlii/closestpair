@@ -5,25 +5,39 @@ import java.util.*;
 
 public class closestpair {
 
-    private static final boolean DEBUG_PRINTS = false;
+    private static final boolean DEBUG_PRINTS = true;
+    private static final boolean DEBUG_TIMES = true;
+    private static int n = 0;
 
     public static void main(String[] args) {
         List<Point> points;
         long startTime = System.currentTimeMillis();
 
         try {
+            // inläsning
             points = inhabitList(args[0]);
-            Point[] pointsArray = points.toArray(new Point[0]);
-            long fileTime = System.currentTimeMillis()-startTime;
-            if(DEBUG_PRINTS) System.err.println("\n\tfile read: " + formatLongTime(fileTime));
+            final Point[] pointsArray = points.toArray(new Point[points.size()]);
+            if(DEBUG_PRINTS || DEBUG_TIMES) {
+                long fileTime = System.currentTimeMillis()-startTime;
+                System.err.println("\tfile read: " + formatLongTime(fileTime));
+            }
 
+            // init sortering
             Arrays.sort(pointsArray, Comparator.comparingDouble(p -> p.x));
-            long sortTime = System.currentTimeMillis()-startTime;
-            if(DEBUG_PRINTS) System.err.println("\n\tarray sort: " + formatLongTime(sortTime));
 
-            System.out.println(nlognSolution(pointsArray,0, pointsArray.length-1));
-            long doneTime = System.currentTimeMillis()-startTime;
-            if(DEBUG_PRINTS) System.err.println("\n\tdone: " + formatLongTime(doneTime));
+            if(DEBUG_PRINTS || DEBUG_TIMES) {
+                long sortTime = System.currentTimeMillis()-startTime;
+                System.err.println("\tarray sort: " + formatLongTime(sortTime));
+            }
+
+            // allt löst
+            double result = kindaGoodSolution(pointsArray,0, pointsArray.length-1);
+            System.out.println(args[0] + ": "+n+" "+result);
+
+            if(DEBUG_PRINTS || DEBUG_TIMES) {
+                long doneTime = System.currentTimeMillis()-startTime;
+                System.err.println("\tdone: " + formatLongTime(doneTime));
+            }
 
         } catch (FileNotFoundException e) {
             System.err.println("Could not find file, exiting...");
@@ -35,25 +49,26 @@ public class closestpair {
 
     }
 
-    private static double nlognSolution(Point[] points, int lower, int upper) {
-        int spliceSize = upper-lower;
-        if(spliceSize <= 3) {
-            Point[] splice = Arrays.copyOfRange(points,lower,upper);
+    private static double kindaGoodSolution(Point[] points, int lowerIndex, int upperIndex) {
+        int spliceSize = upperIndex-lowerIndex+1;
+        if(spliceSize <= 30) {
+            //                                                      vv skiten är exclusive.
+            Point[] splice = Arrays.copyOfRange(points,lowerIndex,upperIndex+1);
             return quadraticSolution(splice);
         }
 
-        double deltaL = nlognSolution(points,0,spliceSize/2);
-        double deltaR = nlognSolution(points,spliceSize/2+1,spliceSize);
+        double deltaL = kindaGoodSolution(points, lowerIndex,lowerIndex+spliceSize/2);
+        double deltaR = kindaGoodSolution(points,lowerIndex+spliceSize/2+1, upperIndex);
         double delta = Math.min(deltaL, deltaR);
 
         // Finding indicies for the strip array.
         int start;
         int end;
-        int middle = lower + spliceSize/2;
+        int middle = lowerIndex + spliceSize/2;
         int i = middle;
 
         while(points[i].x >= points[middle].x - delta) {
-            if(i==0) {
+            if(i==lowerIndex) {
                 break;
             } else {
                 i--;
@@ -63,7 +78,7 @@ public class closestpair {
         i = middle;
 
         while(points[i].x <= points[middle].x + delta) {
-            if(i==upper) {
+            if(i==upperIndex) {
                 break;
             } else {
                 i++;
@@ -73,23 +88,30 @@ public class closestpair {
 
         Point[] strip = Arrays.copyOfRange(points, start, end);
 
+        // sorting in Y-axis
         Arrays.sort(strip, Comparator.comparingDouble(p -> p.y));
-
+        // finding the smallest distance in the strip.
         double result = delta;
         for(int j = 0; j<strip.length; j++) {
             for(int k = 1; k<=15; k++) {
                 try {
                     double distance = strip[j].distanceTo(strip[j+k]);
-                    if(distance<result) result=distance;
+                    if(distance<result) {
+                        result = distance;
+
+                    } else {
+                        // continues on the next point j++ if distance if > result.
+                        break;
+                    }
                 } catch (ArrayIndexOutOfBoundsException ignored){
                 }
             }
         }
+
         return result;
     }
 
     private static double quadraticSolution(Point[] points) {
-        //ArrayList<Point> closestPair = new ArrayList<>();
         double shortestDistance = Double.MAX_VALUE;
 
         for(Point p : points) {
@@ -97,9 +119,6 @@ public class closestpair {
                 double currDist = p.distanceTo(pp);
                 if(!p.equals(pp) && currDist<shortestDistance) {
                     shortestDistance = currDist;
-//                    closestPair.clear();
-//                    closestPair.add(p);
-//                    closestPair.add(pp);
                 }
             }
         }
@@ -110,7 +129,6 @@ public class closestpair {
         ArrayList<Point> points = new ArrayList<>();
         Scanner sc = new Scanner(new FileInputStream(fileName));
         int nonPointLines = 0;
-        int n = 0;
 
         while(sc.hasNextLine()) {
             String currLine = sc.nextLine();
