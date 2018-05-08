@@ -7,6 +7,13 @@ public class closestpair {
 
     private static final boolean DEBUG_PRINTS = true;
     private static final boolean DEBUG_TIMES = true;
+    /*
+     Hörde labbledaren igår sa att 'roten ur' är en långsam operation och eftersom x<y => x^2<y^2(^2 är ju stört effektiv)
+     kan man jämföra kvadrerade avstånd istället och i slutet ta roten ur 1 GÅNG.
+
+     huge.tsp gick från 40s till 9.9s.
+      */
+    private static final boolean SQUARED_DISTANCES = true;
     private static int n = 0;
 
     public static void main(String[] args) {
@@ -17,6 +24,7 @@ public class closestpair {
             // inläsning
             points = inhabitList(args[0]);
             final Point[] pointsArray = points.toArray(new Point[points.size()]);
+
             if(DEBUG_PRINTS || DEBUG_TIMES) {
                 long fileTime = System.currentTimeMillis()-startTime;
                 System.err.println("\tfile read: " + formatLongTime(fileTime));
@@ -31,7 +39,9 @@ public class closestpair {
             }
 
             // allt löst
-            double result = kindaGoodSolution(pointsArray,0, pointsArray.length-1);
+            double squaredResult = kindaGoodSolution(pointsArray,0, pointsArray.length-1);
+            double result = Math.sqrt(squaredResult); //Enda roten ur som händer
+
             System.out.println(args[0] + ": "+n+" "+result);
 
             if(DEBUG_PRINTS || DEBUG_TIMES) {
@@ -203,7 +213,11 @@ public class closestpair {
         }
 
         public double distanceTo(Point other) {
-            return Math.hypot(this.x-other.x, this.y-other.y);
+            if(SQUARED_DISTANCES) {
+                return Math.pow(this.x-other.x,2)+Math.pow(this.y-other.y,2);
+            } else {
+                return Math.hypot(this.x-other.x,this.y-other.y);
+            }
         }
     }
 
